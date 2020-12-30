@@ -1,0 +1,37 @@
+---
+
+- name: create the user at remote
+  hosts: all
+  tasks:
+   - name: Load password from vault
+     include_vars: user_passwords.yml
+   - name: create user
+     user: 
+       name: "{{item.key}}" 
+       password: "{{item.value}}" 
+       shell: "/bin/bash"
+       generate_ssh_key: yes
+       ssh_key_type: rsa
+       ssh_key_bits: 4096
+       ssh_key_file: ".ssh/id_rsa"
+       ssh_key_passphrase: "{{item.value}}"
+       state: present
+     with_dict: "{{ user_passwords }}"
+
+
+- name: Restart service
+  hosts: all
+  tasks:
+   - name: restart ssh service
+     command: sudo service sshd restart
+   - name: copy sh file
+     copy:
+       src: /home/final-tesy/passwordgenrator.sh
+       dest: /home/final-tesy/ansible
+ 
+   - name: Go to the folder and execute command
+     command: chdir=/home/final-tesy/ansible sh passwordgenrator.sh
+
+   - name: create user on application server
+     command: chdir=/home/final-tesy/ansible sh usercreation.sh
+                                                           
